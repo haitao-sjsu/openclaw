@@ -39,6 +39,36 @@ export function stripEnvelope(text: string): string {
   return text.slice(match[0].length);
 }
 
+const UNTRUSTED_BLOCK = /^[A-Z][^\n]*\(untrusted[^)]*\):\n```json\n[\s\S]*?\n```\s*/gm;
+
+export function stripUntrustedMetadataBlocks(text: string): string {
+  if (!text.includes("(untrusted")) {
+    return text;
+  }
+  UNTRUSTED_BLOCK.lastIndex = 0;
+  const stripped = text.replace(UNTRUSTED_BLOCK, "");
+  return stripped === text ? text : stripped.trimStart();
+}
+
+const SYSTEM_EVENT_LINE = /^System: \[.+\].*$/;
+
+export function stripSystemEventLines(text: string): string {
+  if (!text.startsWith("System: [")) {
+    return text;
+  }
+  const lines = text.split(/\r?\n/);
+  // Drop leading System: lines and any blank lines immediately after them
+  let i = 0;
+  while (i < lines.length && SYSTEM_EVENT_LINE.test(lines[i])) {
+    i++;
+  }
+  // Skip blank lines between system block and actual content
+  while (i < lines.length && lines[i].trim() === "") {
+    i++;
+  }
+  return i === 0 ? text : lines.slice(i).join("\n");
+}
+
 export function stripMessageIdHints(text: string): string {
   if (!text.includes("[message_id:")) {
     return text;
